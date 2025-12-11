@@ -1,7 +1,7 @@
 CC = gcc
 CFLAGS = -Wall -Wextra -std=gnu11
 
-SRC = src/main.c src/lexer.c src/builtins.c
+SRC = src/main.c src/lexer.c src/builtins.c src/parser.c src/exec.c
 OBJ = $(SRC:.c=.o)
 
 foxy: $(OBJ)

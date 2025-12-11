@@ -32,7 +32,8 @@ int main(void)
     char line_buf[MAX_LINE];
     char cwd_buf[PATH_MAX];
 
-    puts("Foxy [Version 0.0.1]");
+    puts("Foxy [Version 0.0.1]\n");
+    // \n has been explicitly added to the string to give it some breathing space.
 
     while (1)
     {
@@ -84,11 +85,12 @@ int main(void)
             continue;
         }
 
-        // 5. Buildins / Exec
-        if (!builtin_dispatch(tokens.items))
+        // 5. Parse and Execute
+        node_t *ast = parse_tokens(&tokens);
+        if (ast)
         {
-            // Placeholder for external execution
-            printf("[Exec] %s\n", tokens.items[0]);
+            exec_node(ast);
+            free_ast(ast);
         }
 
         free_token_list(&tokens);

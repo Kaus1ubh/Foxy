@@ -26,17 +26,28 @@ int builtin_dispatch(char **tokens)
         }
         else
         {
-            // Optional: cd to HOME if no args, but keeping it simple for now as per plan
             fprintf(stderr, "foxy: cd: missing argument\n");
         }
         return 1;
     }
     else if (strcmp(cmd, "help") == 0)
     {
-        printf("Foxy Shell - Builtins:\n");
-        printf("  cd <path>   Change directory\n");
-        printf("  exit        Exit shell\n");
-        printf("  help        Show this help\n");
+        printf("Foxy Shell - Version 0.0.1\n\n");
+        printf("CD       Change the current directory.\n");
+        printf("ECHO     Display messages.\n");
+        printf("EXIT     Quits the Foxy shell.\n");
+        printf("HELP     Provides Help information for Foxy commands.\n\n");
+        printf("External commands (ping, whoami, etc.) are executed from the system PATH.\n");
+        return 1;
+    }
+    else if (strcmp(cmd, "echo") == 0)
+    {
+        for (int i = 1; tokens[i]; ++i)
+        {
+            printf("%s%s", tokens[i], tokens[i+1] ? " " : "");
+        }
+        printf("\n");
+        fflush(stdout);
         return 1;
     }
 

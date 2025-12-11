@@ -156,12 +156,23 @@ int tokenize_line(const char *line, token_list_t *out, lex_err_t *errcode)
             }
             if (c == '>' && *(p+1) == '>') 
             {
-                if (tlist_add(out, ">>") < 0) { *errcode = LEX_ERR_OOM; return -1; 
-            }
+                if (tlist_add(out, ">>") < 0) { *errcode = LEX_ERR_OOM; return -1; }
                 p += 2;
                 continue;
             }
-             else 
+            if (c == '&' && *(p+1) == '&')
+            {
+                if (tlist_add(out, "&&") < 0) { *errcode = LEX_ERR_OOM; return -1; }
+                p += 2;
+                continue;
+            }
+            if (c == '|' && *(p+1) == '|')
+            {
+                if (tlist_add(out, "||") < 0) { *errcode = LEX_ERR_OOM; return -1; }
+                p += 2;
+                continue;
+            }
+            else 
             {
                 char tmp[2] = { c, '\0' };
                 if (tlist_add(out, tmp) < 0)
