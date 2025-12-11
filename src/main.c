@@ -32,6 +32,8 @@ int main(void)
     char line_buf[MAX_LINE];
     char cwd_buf[PATH_MAX];
 
+    puts("Foxy [Version 0.0.1]");
+
     while (1)
     {
         // 2. Prompt
