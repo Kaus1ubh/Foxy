@@ -1,0 +1,11 @@
+CC = gcc
+CFLAGS = -Wall -Wextra -std=gnu11
+
+SRC = src/main.c src/lexer.c src/builtins.c
+OBJ = $(SRC:.c=.o)
+
+foxy: $(OBJ)
+	$(CC) $(CFLAGS) -o foxy $(OBJ)
+
+clean:
+	rm -f $(OBJ) foxy
