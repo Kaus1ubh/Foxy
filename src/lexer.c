@@ -125,8 +125,33 @@ int tokenize_line(const char *line, token_list_t *out, lex_err_t *errcode)
                 ++p;
                 if (!*p) { *errcode = LEX_ERR_UNCLOSED_QUOTE; free(buf); return -1; }
                 char nc = *p;
+                // Special case: only escape $ " \ inside double quotes, others are literal
+                if (nc != '$' && nc != '"' && nc != '\\') {
+                     if (buf_append(&buf, &blen, &bcap, '\\') < 0) { *errcode = LEX_ERR_OOM; free(buf); return -1; }
+                }
                 if (buf_append(&buf, &blen, &bcap, nc) < 0) { *errcode = LEX_ERR_OOM; free(buf); return -1; }
                 ++p;
+                continue;
+            }
+            if (c == '$') {
+                ++p;
+                char varname[256];
+                int vidx = 0;
+                while (*p && (isalnum((unsigned char)*p) || *p == '_') && vidx < 255) {
+                    varname[vidx++] = *p++;
+                }
+                varname[vidx] = '\0';
+                if (vidx > 0) {
+                    char *val = getenv(varname);
+                    if (val) {
+                        for (int i = 0; val[i]; ++i) {
+                            if (buf_append(&buf, &blen, &bcap, val[i]) < 0) { *errcode = LEX_ERR_OOM; free(buf); return -1; }
+                        }
+                    }
+                } else {
+                    // Just a $
+                    if (buf_append(&buf, &blen, &bcap, '$') < 0) { *errcode = LEX_ERR_OOM; free(buf); return -1; }
+                }
                 continue;
             }
             if (buf_append(&buf, &blen, &bcap, c) < 0) { *errcode = LEX_ERR_OOM; free(buf); return -1; }
@@ -148,6 +173,28 @@ int tokenize_line(const char *line, token_list_t *out, lex_err_t *errcode)
         if (c == '\\') { state = S_ESC; ++p; continue; }
         if (c == '\'') { state = S_SQUOTE; ++p; continue; }
         if (c == '"') { state = S_DQUOTE; ++p; continue; }
+
+        if (c == '$') {
+            ++p;
+            char varname[256];
+            int vidx = 0;
+            while (*p && (isalnum((unsigned char)*p) || *p == '_') && vidx < 255) {
+                varname[vidx++] = *p++;
+            }
+            varname[vidx] = '\0';
+            if (vidx > 0) {
+                char *val = getenv(varname);
+                if (val) {
+                    for (int i = 0; val[i]; ++i) {
+                        if (buf_append(&buf, &blen, &bcap, val[i]) < 0) { *errcode = LEX_ERR_OOM; free(buf); return -1; }
+                    }
+                }
+            } else {
+                // Just a $
+                if (buf_append(&buf, &blen, &bcap, '$') < 0) { *errcode = LEX_ERR_OOM; free(buf); return -1; }
+            }
+            continue;
+        }
 
         if (is_special_char(c)) {
             if (buf_push_token(&buf, &blen, &bcap, out) < 0)

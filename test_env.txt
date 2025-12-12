@@ -1,0 +1,7 @@
+echo [Test] Env Var
+echo $USERNAME
+echo [Test] Quoted Env Var
+echo "Hello $USERNAME"
+echo [Test] Escaped Env Var
+echo \$USERNAME
+exit
