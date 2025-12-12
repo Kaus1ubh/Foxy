@@ -1,0 +1,6 @@
+prompt "TEST> "
+echo testing prompt
+prompt "\$CWD >>> "
+echo testing dynamic prompt
+help
+exit

@@ -58,5 +58,8 @@ void free_ast(node_t *node);
 /* Executor API */
 int exec_node(node_t *node);
 
+/* Prompt API */
+void set_prompt_format(const char *fmt);
+
 
 #endif // FOXY_H

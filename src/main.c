@@ -8,15 +8,48 @@
 
 #define MAX_LINE 1024
 
+static char prompt_fmt[MAX_LINE] = "$CWD> ";
+
+void set_prompt_format(const char *fmt)
+{
+    if (!fmt) return;
+    strncpy(prompt_fmt, fmt, MAX_LINE - 1);
+    prompt_fmt[MAX_LINE - 1] = '\0';
+}
+
+void print_prompt()
+{
+    char cwd_buf[PATH_MAX];
+    char *cwd = getcwd(cwd_buf, sizeof(cwd_buf));
+    if (!cwd) cwd = "unknown";
+
+    const char *p = prompt_fmt;
+    while (*p)
+    {
+        if (*p == '$' && strncmp(p, "$CWD", 4) == 0)
+        {
+            printf("%s", cwd);
+            p += 4;
+        }
+        else if (*p == '\\' && *(p+1) == 'n')
+        {
+            printf("\n");
+            p += 2;
+        }
+        else
+        {
+            putchar(*p);
+            ++p;
+        }
+    }
+    fflush(stdout);
+}
+
 void handle_sigint(int sig)
 {
     (void)sig; // unused
     printf("\n");
-    // Reprint prompt?
-    // For simple signal handling, just catching it prevents exit.
-    // Ideally we would want to clear the current line or something, 
-    // but standard behavior is just newline and maybe prompt.
-    // Since we are in fgets, it might return NULL or be interrupted.
+    print_prompt(); 
 }
 
 #include <conio.h>
@@ -24,7 +57,7 @@ void handle_sigint(int sig)
 #define MAX_HISTORY 100
 static char *history[MAX_HISTORY];
 static int history_count = 0;
-static int history_pos = 0;
+
 
 void add_to_history(const char *cmd)
 {
@@ -49,9 +82,7 @@ int read_line_with_history(char *buf, int max_len)
     int pos = 0;
     int ch;
     int h_idx = history_count;
-    char temp_buf[MAX_LINE]; // Store current typing when moving up/down
-
-    temp_buf[0] = '\0';
+    
     buf[0] = '\0';
 
     while (1)
@@ -130,6 +161,54 @@ int read_line_with_history(char *buf, int max_len)
     }
 }
 
+void process_line(char *line)
+{
+    // Remove trailing newline
+    line[strcspn(line, "\n")] = 0;
+
+    // Empty line check
+    if (line[0] == '\0') return;
+
+    // Tokenize
+    token_list_t tokens = {0};
+    lex_err_t lex_err;
+    if (tokenize_line(line, &tokens, &lex_err) != 0)
+    {
+        fprintf(stderr, "foxy: lex error %d\n", lex_err);
+        return;
+    }
+
+    if (tokens.count == 0 || tokens.items[0] == NULL)
+    {
+        free_token_list(&tokens);
+        return;
+    }
+
+    // Parse and Execute
+    node_t *ast = parse_tokens(&tokens);
+    if (ast)
+    {
+        exec_node(ast);
+        free_ast(ast);
+    }
+
+    free_token_list(&tokens);
+}
+
+void run_rc_file()
+{
+    FILE *fp = fopen(".foxyrc", "r");
+    if (fp)
+    {
+        char line[MAX_LINE];
+        while (fgets(line, sizeof(line), fp))
+        {
+            process_line(line);
+        }
+        fclose(fp);
+    }
+}
+
 int main(void)
 {
     // 1. Signal Handling
@@ -140,22 +219,17 @@ int main(void)
     }
 
     char line_buf[MAX_LINE];
-    char cwd_buf[PATH_MAX];
+
 
     puts("Foxy [Version 0.0.1]\n");
+
+    // Run RC file
+    run_rc_file();
 
     while (1)
     {
         // 2. Prompt
-        if (getcwd(cwd_buf, sizeof(cwd_buf)) != NULL)
-        {
-            printf("%s> ", cwd_buf);
-        }
-        else
-        {
-            printf("foxy> ");
-        }
-        fflush(stdout);
+        print_prompt();
 
         // 3. Read Line
         if (_isatty(_fileno(stdin)))
@@ -174,37 +248,9 @@ int main(void)
              {
                  break;
              }
-             // Remove trailing newline
-             line_buf[strcspn(line_buf, "\n")] = 0;
         }
-
-        // Empty line check
-        if (line_buf[0] == '\0') continue;
-
-        // 4. Tokenize
-        token_list_t tokens = {0};
-        lex_err_t lex_err;
-        if (tokenize_line(line_buf, &tokens, &lex_err) != 0)
-        {
-            fprintf(stderr, "foxy: lex error %d\n", lex_err);
-            continue;
-        }
-
-        if (tokens.count == 0 || tokens.items[0] == NULL)
-        {
-            free_token_list(&tokens);
-            continue;
-        }
-
-        // 5. Parse and Execute
-        node_t *ast = parse_tokens(&tokens);
-        if (ast)
-        {
-            exec_node(ast);
-            free_ast(ast);
-        }
-
-        free_token_list(&tokens);
+        
+        process_line(line_buf);
     }
 
     return 0;
