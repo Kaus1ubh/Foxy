@@ -1,0 +1,11 @@
+echo [Test] Job Control
+ping 127.0.0.1 -n 3 > NUL &
+jobs
+ping 127.0.0.1 -n 2 > NUL
+jobs
+echo [Test] Foreground
+ping 127.0.0.1 -n 5 > NUL &
+jobs
+fg 2
+echo [Test] Done
+exit

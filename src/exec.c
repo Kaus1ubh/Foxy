@@ -65,7 +65,7 @@ static int spawn_command(node_t *node, int input_fd, int output_fd)
     // Check builtin
     char **argv = node->cmd.args;
     // Force NOWAIT if background flag is set
-    int mode = node->cmd.is_background ? _P_NOWAIT : _P_WAIT;
+    int mode = (node->cmd.bg_mode > 0) ? _P_NOWAIT : _P_WAIT;
     int status = 0;
 
     if (builtin_dispatch(argv))
@@ -87,6 +87,10 @@ static int spawn_command(node_t *node, int input_fd, int output_fd)
             {
                  // ret is HANDLE (or pid cast to intptr_t cast to int)
                  // returning 0 to executor to signify "started bg"
+                 if (node->cmd.bg_mode == 1) // Only track explicit background jobs
+                 {
+                     job_add((intptr_t)ret, argv[0]); 
+                 }
                  status = 0; 
             }
             else
@@ -158,8 +162,8 @@ int exec_node(node_t *node)
 
             // Hack: Mark left as background to force _P_NOWAIT
             // Accessing union members: depends on type
-            if (node->binary.left->type == NODE_CMD) node->binary.left->cmd.is_background = 1;
-            else node->binary.left->binary.is_background = 1;
+            if (node->binary.left->type == NODE_CMD) node->binary.left->cmd.bg_mode = 2; // PIPE_ASYNC
+            else node->binary.left->binary.bg_mode = 2;
 
             exec_node(node->binary.left); // Ignoring handle
             

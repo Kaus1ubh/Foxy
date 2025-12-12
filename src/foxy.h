@@ -5,6 +5,8 @@
 
 typedef enum { LEX_OK = 0, LEX_ERR_UNCLOSED_QUOTE = 1, LEX_ERR_OOM = 2 } lex_err_t;
 
+#include "jobs.h"
+
 typedef struct 
 {
     char **items;
@@ -39,14 +41,14 @@ typedef struct node_t
             char *infile;      // <
             char *outfile;     // > or >>
             int append_out;    // 1 if >>, 0 if >
-            int is_background; // &
+            int bg_mode;       // 0=FG, 1=BG(&), 2=PIPE_ASYNC
         } cmd;
 
         struct 
         {
             struct node_t *left;
             struct node_t *right;
-            int is_background; // for pipelines/logic?
+            int bg_mode; 
         } binary;
     };
 } node_t;

@@ -97,10 +97,11 @@ static node_t *parse_list(char **tokens, int *pos, int count)
              // If left is a binary node, we might need to propagate or wrap.
              // Simplest: set flag on the node if possible or rely on top-level execution.
              // But existing struct has is_background in cmd and binary.
-             if (left->type == NODE_CMD) left->cmd.is_background = 1;
-             else left->binary.is_background = 1;
+             if (left->type == NODE_CMD) left->cmd.bg_mode = 1;
+             else left->binary.bg_mode = 1;
              
              // If there are more commands after &, treat as sequence? 
+
              // e.g. "sleep 1 & echo done" -> treated as sequence where left is bg.
              if (*pos < count)
              {

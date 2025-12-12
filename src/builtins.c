@@ -36,7 +36,9 @@ int builtin_dispatch(char **tokens)
         printf("CD       Change the current directory.\n");
         printf("ECHO     Display messages.\n");
         printf("EXIT     Quits the Foxy shell.\n");
+        printf("FG       Brings a background job to the foreground (fg %%id).\n");
         printf("HELP     Provides Help information for Foxy commands.\n");
+        printf("JOBS     Lists active background jobs.\n");
         printf("PROMPT   Customize the shell prompt (e.g., prompt $CWD> ).\n");
         printf("\nExternal commands (ping, whoami, etc.) are executed from the system PATH.\n");
         return 1;
@@ -70,6 +72,28 @@ int builtin_dispatch(char **tokens)
         else
         {
             set_prompt_format(buf);
+        }
+        return 1;
+    }
+    else if (strcmp(cmd, "jobs") == 0)
+    {
+        job_print_all();
+        return 1;
+    }
+    else if (strcmp(cmd, "fg") == 0)
+    {
+        if (tokens[1])
+        {
+            int id = atoi(tokens[1]); 
+            if (tokens[1][0] == '%') id = atoi(tokens[1]+1);
+            if (job_to_foreground(id) != 0)
+            {
+                // Error printed by job_to_foreground
+            }
+        }
+        else
+        {
+             fprintf(stderr, "foxy: fg: missing job id\n");
         }
         return 1;
     }
