@@ -4,6 +4,8 @@
 #include <string.h>
 #include <unistd.h>
 
+#include "alias.h"
+
 int builtin_dispatch(char **tokens)
 {
     if (!tokens || !tokens[0]) return 0;
@@ -33,13 +35,16 @@ int builtin_dispatch(char **tokens)
     else if (strcmp(cmd, "help") == 0)
     {
         printf("Foxy Shell - Version 0.0.1\n\n");
+        printf("ALIAS    Define or display aliases (alias name=value).\n");
         printf("CD       Change the current directory.\n");
         printf("ECHO     Display messages.\n");
         printf("EXIT     Quits the Foxy shell.\n");
+        printf("EXPORT   Set environment variable (export VAR=VAL).\n");
         printf("FG       Brings a background job to the foreground (fg %%id).\n");
         printf("HELP     Provides Help information for Foxy commands.\n");
         printf("JOBS     Lists active background jobs.\n");
         printf("PROMPT   Customize the shell prompt (e.g., prompt $CWD> ).\n");
+        printf("UNALIAS  Remove an alias.\n");
         printf("\nExternal commands (ping, whoami, etc.) are executed from the system PATH.\n");
         return 1;
     }
@@ -94,6 +99,63 @@ int builtin_dispatch(char **tokens)
         else
         {
              fprintf(stderr, "foxy: fg: missing job id\n");
+        }
+        return 1;
+    }
+
+
+    else if (strcmp(cmd, "alias") == 0)
+    {
+        if (!tokens[1])
+        {
+            alias_print_all();
+        }
+        else
+        {
+            // Support: alias name=value
+            // If tokens are split "alias" "name=value", tokens[1] is "name=value".
+            // If tokens are "alias" "name" "=" "value" (depends on lexer), logic is harder.
+            // Our lexer splits on whitespace unless quoted.
+            // "alias name=value" -> "alias" "name=value"
+            
+            char *arg = tokens[1];
+            char *eq = strchr(arg, '=');
+            if (eq)
+            {
+                *eq = '\0'; // split
+                char *val = eq + 1;
+                // If val is quoted in input, lexer might have stripped quotes if full string was quoted?
+                // Or if user typed: alias name="foo bar" -> tokens[1] = name=foo bar
+                
+                alias_add(arg, val);
+            }
+            else
+            {
+                // Show specific alias? "alias name"
+                 const char *v = alias_resolve(arg);
+                 if (v) printf("%s='%s'\n", arg, v);
+                 else fprintf(stderr, "foxy: alias %s not found\n", arg);
+            }
+        }
+        return 1;
+    }
+    else if (strcmp(cmd, "unalias") == 0)
+    {
+        if (tokens[1]) alias_remove(tokens[1]);
+        else fprintf(stderr, "foxy: unalias: missing name\n");
+        return 1;
+    }
+    else if (strcmp(cmd, "export") == 0)
+    {
+        if (tokens[1])
+        {
+             // export VAR=VAL
+             // or export VAR (implied?)
+             // Windows _putenv takes "VAR=VAL" directly.
+             if (_putenv(tokens[1]) != 0)
+             {
+                 perror("foxy: export");
+             }
         }
         return 1;
     }

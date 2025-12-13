@@ -180,7 +180,7 @@ static void do_completion(char *buf, int *pos)
 
     WIN32_FIND_DATA ffd;
     char pattern[256];
-    sprintf(pattern, "%s*", partial);
+    snprintf(pattern, sizeof(pattern), "%s*", partial);
     
     HANDLE hFind = FindFirstFile(pattern, &ffd);
     if (hFind != INVALID_HANDLE_VALUE)

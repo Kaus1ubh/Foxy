@@ -53,6 +53,7 @@ void handle_sigint(int sig)
 }
 
 #include "interaction.h"
+#include "alias.h"
 
 // MAX_HISTORY code removed
 // add_to_history removed
@@ -79,6 +80,44 @@ void process_line(char *line)
     {
         free_token_list(&tokens);
         return;
+    }
+
+    // Alias Expansion
+    const char *resolved = alias_resolve(tokens.items[0]);
+    if (resolved)
+    {
+        // Re-tokenize command using alias value + original args
+        // E.g. alias ll='ls -l'
+        // Input: ll /tmp
+        // Resolved: ls -l /tmp
+        
+        // Simple buffer reconstruction
+        char new_line[MAX_LINE];
+        // Ensure space
+        snprintf(new_line, sizeof(new_line), "%s", resolved);
+        
+        // Append rest of args
+        for (size_t i = 1; i < tokens.count; ++i)
+        {
+            strncat(new_line, " ", sizeof(new_line) - strlen(new_line) - 1);
+            strncat(new_line, tokens.items[i], sizeof(new_line) - strlen(new_line) - 1);
+        }
+        
+        // Free old tokens
+        free_token_list(&tokens);
+        
+        // Process new line (tokenize again)
+        // Check recursion? "alias ls='ls -F'" -> infinite loop if we recurse process_line
+        // Better to re-tokenize here without recursion into alias lookup?
+        // Or simple recursion with depth limit?
+        // Simplest: re-tokenize and parse directly (one level alias).
+        
+        lex_err_t err2;
+        if (tokenize_line(new_line, &tokens, &err2) != 0)
+        {
+             fprintf(stderr, "foxy: alias expansion error\n");
+             return;
+        }
     }
 
     // Parse and Execute
@@ -129,6 +168,9 @@ int main(void)
     // 1c. History Load
     history_init();
     history_load();
+
+    // 1d. Alias Init
+    alias_init();
 
     while (1)
     {
