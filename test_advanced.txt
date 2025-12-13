@@ -1,0 +1,12 @@
+echo [Test] Aliases
+alias hello=echo Hello World
+hello
+alias l=ls
+alias
+unalias hello
+hello
+echo [Test] Export
+export FOO=Bar
+echo $FOO
+echo [Test] Done
+exit
